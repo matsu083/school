@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>グループ分けアプリ v3</title>
+<style>
+body{font-family:sans-serif;margin:20px}
+.member{display:inline-block;width:170px;margin:2px}
+.seat{border:1px solid #666;border-radius:6px;height:42px;display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center}
+.block{margin-bottom:20px}
+.row{display:grid;grid-template-columns:repeat(8,85px);gap:4px}
+button{padding:8px 14px}
+</style>
+</head>
+<body>
+<h1>グループ分け＆座席配置</h1>
+
+<h3>欠席者</h3>
+<div id="attendance"></div><br>
+
+1グループの人数:
+<input type="number" id="groupSize" value="4" min="2" max="10">
+<button onclick="make()">作成</button>
+
+<div id="groups"></div>
+<div id="room"></div>
+
+<script>
+const members=[
+"花上貴仁","小山美優","小林美月","島田優","樋口悠斗","渡辺敬太","岡本梨歩",
+"塚田理央","持田菜々美","大槻亮介","小宮杏菜","土田昊士","齋藤花菜",
+"滝口貴斗","袴田宗吾","松本莉香","小勝綾奈","勝浦竜青","杉山空輝"
+];
+const colors=["#ffd6d6","#d6e4ff","#d6ffd8","#fff7bf","#f0d6ff","#ffe4c4","#d6ffff"];
+
+members.forEach((m,i)=>{
+ attendance.innerHTML+=`<div class="member"><label><input type="checkbox" id="a${i}">${m}</label></div>`;
+});
+
+function shuffle(a){
+ for(let i=a.length-1;i>0;i--){
+  let j=Math.floor(Math.random()*(i+1));
+  [a[i],a[j]]=[a[j],a[i]];
+ }
+}
+
+function make(){
+ let present=[];
+ members.forEach((m,i)=>{
+  if(!document.getElementById("a"+i).checked) present.push(m);
+ });
+ shuffle(present);
+
+ let size=parseInt(document.getElementById("groupSize").value);
+ let groupCount=Math.ceil(present.length/size);
+
+ let groups=Array.from({length:groupCount},()=>[]);
+ present.forEach((m,i)=>groups[i%groupCount].push(m));
+
+ groups.innerHTML="";
+
+ let ghtml="<h2>グループ</h2>";
+ groups.forEach((g,i)=>{
+   ghtml+=`<div style="display:inline-block;background:${colors[i%colors.length]};padding:8px;margin:5px;border:1px solid #333">
+   <b>グループ${i+1} (${g.length}人)</b><br>${g.join("<br>")}</div>`;
+ });
+ document.getElementById("groups").innerHTML=ghtml;
+
+ // 教室 3列×16席
+ let cols=[[],[],[]];
+ groups.forEach((g,i)=>cols[i%3].push({members:g,color:i}));
+
+ let roomHtml="<h2>教室配置</h2><b>【先生】</b>";
+
+ cols.forEach((col,colIdx)=>{
+   roomHtml+=`<div class="block"><h3>列${colIdx+1}</h3>`;
+
+   let seats=new Array(16).fill(null);
+   let start=0;
+
+   col.forEach(item=>{
+      const shape=[start,start+1,start+8,start+9,start+2,start+10,start+3];
+      item.members.forEach((name,k)=>{
+         if(shape[k]!==undefined && shape[k]<16){
+           seats[shape[k]]={name,color:item.color};
+         }
+      });
+      start+=5; // グループ間に空席
+   });
+
+   for(let r=0;r<2;r++){
+      roomHtml+='<div class="row">';
+      for(let c=0;c<8;c++){
+         let idx=r*8+c;
+         let s=seats[idx];
+         if(s){
+           roomHtml+=`<div class="seat" style="background:${colors[s.color%colors.length]}">${s.name}</div>`;
+         }else{
+           roomHtml+=`<div class="seat">空席</div>`;
+         }
+      }
+      roomHtml+='</div>';
+   }
+   roomHtml+='</div>';
+ });
+
+ document.getElementById("room").innerHTML=roomHtml+"<b>【後ろ】</b>";
+}
+</script>
+</body>
+</html>
